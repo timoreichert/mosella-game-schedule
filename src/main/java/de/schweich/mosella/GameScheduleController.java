@@ -18,7 +18,6 @@ public class GameScheduleController {
     @RequestMapping("/next-games")
     public String nextGames() {
         StringWriter out = new StringWriter();
-        out.write("<pre><code>");
         String spec = "http://www.fussball.de/ajax.club.next.games/-/id/00ES8GNB78000065VV0AG08LVUPGND5I";
         try (InputStream in = new URL(spec).openStream()) {
             Elements matchplan = Jsoup
@@ -30,9 +29,9 @@ public class GameScheduleController {
                     //System.out.println(e.select("td").text());
                 } else if (e.hasClass("row-competition")) {
                     if(e.select(".column-date").text().contains("|")){
-                        out.write("\n" + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "\n"));
+                        out.write("<h2>" + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h2>\n<pre>"));
                     }else{
-                        out.write(e.select(".column-date").text());
+                        out.write("<pre>" + e.select(".column-date").text());
                     }
                     out.write(" | " + e.select(".column-team>a").text() + '\n');
                 } else {
@@ -45,12 +44,13 @@ public class GameScheduleController {
                             out.write('\n');
                         }
                     }));
+                    out.write("</pre>\n\n");
+                    
                 }
             });
         } catch (IOException e) {
             Logger.getLogger("MOSELLA").log(Level.SEVERE, null, e);
         }
-        out.write("</code></pre>");
         out.flush();
         return out.toString();
     }
