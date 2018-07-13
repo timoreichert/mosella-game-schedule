@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class GameScheduleController {
 
+    //📅⌚
+    
     @RequestMapping("/next-games")
     public String nextGames() {
         StringWriter out = new StringWriter();
@@ -29,9 +31,9 @@ public class GameScheduleController {
                     //System.out.println(e.select("td").text());
                 } else if (e.hasClass("row-competition")) {
                     if(e.select(".column-date").text().contains("|")){
-                        out.write("<h2>" + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h2>\n<pre>"));
+                        out.write("<h2>📅 " + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h2>\n<pre>⌚ "));
                     }else{
-                        out.write("<pre>" + e.select(".column-date").text());
+                        out.write("<pre>⌚ <time>" + e.select(".column-date").text() + "</time>");
                     }
                     out.write(" | " + e.select(".column-team>a").text() + '\n');
                 } else {
