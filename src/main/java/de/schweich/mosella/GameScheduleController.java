@@ -1,6 +1,5 @@
 package de.schweich.mosella;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -15,8 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class GameScheduleController {
 
-    //📅⌚
-    
     @RequestMapping("/next-games")
     public String nextGames() {
         StringWriter out = new StringWriter();
