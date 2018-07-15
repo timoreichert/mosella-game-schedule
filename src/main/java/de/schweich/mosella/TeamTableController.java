@@ -68,7 +68,13 @@ public class TeamTableController {
                     if (col.hasClass("column-icon")) {
                         
                     }else if (col.hasClass("column-club")) {
-                        out.write("<td>" + col.select(".club-name").text() + "</td>");
+                        String clubName = col.select(".club-name").text();
+                        if(clubName.contains("Schweich")){
+                        out.write("<td><b>" + clubName + "</b></td>");    
+                        }else{
+                        out.write("<td>" + clubName + "</td>");    
+                        }
+                        
                     } else if (col.hasClass("no-wrap")) {
                         out.write("<td class=\"no-wrap\">" + col.text() + "</td>");
                     } else {
