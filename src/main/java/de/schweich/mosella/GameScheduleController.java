@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
+import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jsoup.Jsoup;
@@ -17,6 +18,11 @@ public class GameScheduleController {
     @RequestMapping("/next-games")
     public String nextGames() {
         StringWriter out = new StringWriter();
+        
+        out.write("<h2>Spielvorschau Abteilung Fußball 2018 (KW " 
+                + Calendar.getInstance().get(Calendar.WEEK_OF_YEAR)
+                +  ")</h2>");
+        
         String spec = "http://www.fussball.de/ajax.club.next.games/-/id/00ES8GNB78000065VV0AG08LVUPGND5I";
         try (InputStream in = new URL(spec).openStream()) {
             Elements matchplan = Jsoup
@@ -28,7 +34,7 @@ public class GameScheduleController {
                     //System.out.println(e.select("td").text());
                 } else if (e.hasClass("row-competition")) {
                     if(e.select(".column-date").text().contains("|")){
-                        out.write("<h2>📅 " + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h2>\n<pre>⌚ "));
+                        out.write("<h3>📅 " + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h3>\n<pre>⌚ "));
                     }else{
                         out.write("<pre>⌚ <time>" + e.select(".column-date").text() + "</time>");
                     }
