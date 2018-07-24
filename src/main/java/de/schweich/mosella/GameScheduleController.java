@@ -19,9 +19,12 @@ public class GameScheduleController {
     public String nextGames() {
         StringWriter out = new StringWriter();
         
-        out.write("<h2>Spielvorschau Abteilung Fußball 2018 (KW " 
+        out.write("<h2>Spielvorschau Abteilung Fußball KW " 
                 + Calendar.getInstance().get(Calendar.WEEK_OF_YEAR)
-                +  ")</h2>");
+                +  "/"
+                + Calendar.getInstance().get(Calendar.YEAR)
+                + "</h2>");
+        out.write("<p>Alle wichtigen Termine der kommenden Woche auf eine Blick</p>"); 
         
         String spec = "http://www.fussball.de/ajax.club.next.games/-/id/00ES8GNB78000065VV0AG08LVUPGND5I";
         try (InputStream in = new URL(spec).openStream()) {
