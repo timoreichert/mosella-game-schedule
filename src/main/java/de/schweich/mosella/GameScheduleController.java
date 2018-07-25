@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GameScheduleController {
 
     @RequestMapping("/next-games")
-    public String nextGames() {
+    public String nextGames() {      
         StringWriter out = new StringWriter();
         
         out.write("<h2>Spielvorschau Abteilung Fußball KW " 
@@ -24,7 +24,8 @@ public class GameScheduleController {
                 +  "/"
                 + Calendar.getInstance().get(Calendar.YEAR)
                 + "</h2>");
-        out.write("<p>Alle wichtigen Termine der kommenden Woche auf eine Blick</p>"); 
+        out.write("\n<p>Alle wichtigen Termine der kommenden Woche auf eine Blick</p>"
+                + "\n\t<ul>"); 
         
         String spec = "http://www.fussball.de/ajax.club.next.games/-/id/00ES8GNB78000065VV0AG08LVUPGND5I";
         try (InputStream in = new URL(spec).openStream()) {
@@ -32,29 +33,42 @@ public class GameScheduleController {
                     .parse(in, "UTF-8", "")
                     .select(".club-matchplan-table")
                     .select("table>tbody>tr");
+            
             matchplan.forEach(e -> {
+                
                 if (e.hasClass("row-headline")) {
                     //System.out.println(e.select("td").text());
                 } else if (e.hasClass("row-competition")) {
                     if(e.select(".column-date").text().contains("|")){
-                        out.write("<h3>📅 " + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h3>\n<pre>⌚ "));
+                        
+                        out.write("\n</ul>"
+                                + "\n<h3>📅 " + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h3>"
+                                + "\n<ul style=\"margin-top:1rem;\">"
+                                + "\n\t<li style=\"font-family: Lucida Console,monospace; margin-bottom:1rem;\">"));
                     }else{
-                        out.write("<pre>⌚ <time>" + e.select(".column-date").text() + "</time>");
+                        out.write("\t<li style=\"font-family: Lucida Console,monospace; margin-bottom:1rem;\">" 
+                                + e.select(".column-date").text());
                     }
-                    out.write(" | " + e.select(".column-team>a").text() + '\n');
+                    out.write(" | " + e.select(".column-team>a").text());
                 } else {
                     e.select("td").forEach((c -> {
                         if (c.hasClass("column-club")) {
+                            if (!c.hasClass("no-border")) {
+                                out.write("\t\t<br>");
+                            }
                             out.write(c.select(".club-name").text());
                         } else if (c.hasClass("column-colon")) {
                             out.write(" " + c.text() + " ");
                         } else if (c.hasClass("column-score")) {
+                            if (c.select("span").hasClass("info-text")) {
+                                out.write("\n\t\t<br><b>❗❗❗"+c.select("span").text()+"❗❗❗</b>");
+                            }
                             out.write('\n');
                         }
                     }));
-                    out.write("</pre>\n\n");
-                    
+                    out.write("\t</li>\n");
                 }
+                
             });
         } catch (IOException e) {
             Logger.getLogger("MOSELLA").log(Level.SEVERE, null, e);
