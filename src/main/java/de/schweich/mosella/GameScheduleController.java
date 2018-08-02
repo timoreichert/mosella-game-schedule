@@ -44,9 +44,9 @@ public class GameScheduleController {
                         out.write("\n</ul>"
                                 + "\n<h3>📅 " + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h3>"
                                 + "\n<ul style=\"margin-top:1rem;\">"
-                                + "\n\t<li style=\"font-family: Lucida Console,monospace; margin-bottom:1rem;\">"));
+                                + "\n\t<li><pre>"));
                     }else{
-                        out.write("\t<li style=\"font-family: Lucida Console,monospace; margin-bottom:1rem;\">" 
+                        out.write("\t<li><pre>" 
                                 + e.select(".column-date").text());
                     }
                     out.write(" | " + e.select(".column-team>a").text());
@@ -66,7 +66,7 @@ public class GameScheduleController {
                             out.write('\n');
                         }
                     }));
-                    out.write("\t</li>\n");
+                    out.write("\t</pre></li>\n");
                 }
                 
             });
