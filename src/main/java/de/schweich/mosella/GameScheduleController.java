@@ -1,78 +1,90 @@
 package de.schweich.mosella;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
-import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Locale;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 public class GameScheduleController {
 
     @RequestMapping("/next-games")
-    public String nextGames() {      
+    public String nextGames() {
+
+        DateFormat df = new SimpleDateFormat("YYYY-MM-dd", Locale.GERMANY);
+
         StringWriter out = new StringWriter();
-        
-        out.write("<h2>Spielvorschau Abteilung Fußball KW " 
+        out.write("<h1>Spielvorschau Abteilung Fußball KW "
                 + Calendar.getInstance().get(Calendar.WEEK_OF_YEAR)
-                +  "/"
+                + "/"
                 + Calendar.getInstance().get(Calendar.YEAR)
-                + "</h2>");
-        out.write("\n<p>Alle wichtigen Termine der kommenden Woche auf eine Blick</p>"
-                + "\n\t<ul>"); 
-        
-        String spec = "http://www.fussball.de/ajax.club.next.games/-/id/00ES8GNB78000065VV0AG08LVUPGND5I";
-        try (InputStream in = new URL(spec).openStream()) {
-            Elements matchplan = Jsoup
-                    .parse(in, "UTF-8", "")
-                    .select(".club-matchplan-table")
-                    .select("table>tbody>tr");
-            
-            matchplan.forEach(e -> {
-                
-                if (e.hasClass("row-headline")) {
-                    //System.out.println(e.select("td").text());
-                } else if (e.hasClass("row-competition")) {
-                    if(e.select(".column-date").text().contains("|")){
-                        
-                        out.write("\n</ul>"
-                                + "\n<h3>📅 " + e.select(".column-date").text().replaceAll("\\s\\|{1}\\s", "</h3>"
-                                + "\n<ul style=\"margin-top:1rem;\">"
-                                + "\n\t<li style=\"font-family: Lucida Console,monospace; margin-bottom:1rem;\">"));
-                    }else{
-                        out.write("\t<li style=\"font-family: Lucida Console,monospace; margin-bottom:1rem;\">" 
-                                + e.select(".column-date").text());
-                    }
-                    out.write(" | " + e.select(".column-team>a").text());
-                } else {
-                    e.select("td").forEach((c -> {
-                        if (c.hasClass("column-club")) {
-                            if (!c.hasClass("no-border")) {
-                                out.write("\t\t<br>");
-                            }
-                            out.write(c.select(".club-name").text());
-                        } else if (c.hasClass("column-colon")) {
-                            out.write(" " + c.text() + " ");
-                        } else if (c.hasClass("column-score")) {
-                            if (c.select("span").hasClass("info-text")) {
-                                out.write("\n\t\t<br><b>❗❗❗"+c.select("span").text()+"❗❗❗</b>");
-                            }
-                            out.write('\n');
-                        }
-                    }));
-                    out.write("\t</li>\n");
+                + "\n<br><small>Alle wichtigen Termine der kommenden Woche auf eine Blick</small>"
+                + "</h1>");
+
+        RestTemplate restTemplate = new RestTemplate();
+        String spec = "http://www.fussball.de/ajax.club.matchplan/-/id/00ES8GNB78000065VV0AG08LVUPGND5I/mode/PAGE/show-filter/false"
+                + "/max/{max}"
+                + "/datum-von/{datum-von}"
+                + "/datum-bis/{datum-bis}"
+                + "/offset/{offset}"
+                + "/show-venues/checked";
+
+        Calendar cal = Calendar.getInstance(Locale.GERMANY);
+        String from = df.format(cal.getTime());
+
+        cal.add(Calendar.DAY_OF_MONTH, 7);
+        String until = df.format(cal.getTime());
+
+        String response = restTemplate.getForObject(spec, String.class, "60", from, until, "0");
+
+        Elements matchplan = Jsoup
+                .parse(response)
+                .select("#id-club-matchplan-table")
+                .select("div>table>tbody>tr");
+
+        final String[] date = {""};
+        matchplan.forEach((Element tr) -> {
+            if (tr.hasClass("hidden-small")) {
+                if (tr.hasClass("row-venue")) {
+                    out.write("<br>🏟️ <small>" + tr.text() + "</small>");
                 }
-                
-            });
-        } catch (IOException e) {
-            Logger.getLogger("MOSELLA").log(Level.SEVERE, null, e);
-        }
+            } else {
+                if (tr.hasClass("row-headline")) {
+                    String[] headline = tr.select("td").text().split((" - "));
+                    if (headline.length == 2) {
+                        if (!date[0].contentEquals(headline[0])) {
+                            out.write("\n<h2>📅 " + (date[0] = headline[0]) + "</h2>");
+                        }
+                        if (headline[1].matches("[0-9]{1,2}:[0-9]{1,2} Uhr.*")) {
+                            out.write("\n<h3>⚽ " + headline[1] + "</h3>");
+                        }
+                    }
+                } else {
+                    if (tr.toString().toLowerCase().contains("spielfrei")) {
+                        //skip
+                    } else {
+                        tr.select("td").forEach(td -> {
+                            if (td.hasClass("column-club")) {
+                                if (td.text().toLowerCase().contains("tus mosella schweich")) {
+                                    out.write("<mark>" + td.text() + "</mark>");
+                                } else {
+                                    out.write(td.text());
+                                }
+                            } else if (td.hasClass("column-colon")) {
+                                out.write(" 🆚 ");
+                            }
+                        });
+                    }
+                }
+            }
+        });
         out.flush();
         return out.toString();
     }
