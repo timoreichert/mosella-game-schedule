@@ -1,5 +1,7 @@
 package de.schweich.mosella;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.text.DateFormat;
@@ -21,14 +23,14 @@ public class GameScheduleController {
 
     @RequestMapping("/next-games")
     public String nextGames() {      
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar cal = Calendar.getInstance(Locale.GERMANY);
+        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        final Calendar cal = Calendar.getInstance(Locale.GERMANY);
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
 
-        StringWriter out = new StringWriter();
+        final StringWriter out = new StringWriter();
         out.write("<h2>Spielvorschau Abteilung Fußball KW " 
                 + cal.get(Calendar.WEEK_OF_YEAR) + "/" + cal.get(Calendar.YEAR)
                 + "</h2>");
@@ -37,12 +39,12 @@ public class GameScheduleController {
         
         int dayFromMonday = (cal.get(Calendar.DAY_OF_WEEK) + 7 - Calendar.MONDAY) % 7;
         cal.add(Calendar.DATE, -dayFromMonday);
-        String from = df.format(cal.getTime());
+        final String from = df.format(cal.getTime());
         cal.add(Calendar.DATE, 7);
         cal.add(Calendar.MILLISECOND, -1);
-        String to = df.format(cal.getTime());
+        final String to = df.format(cal.getTime());
 
-        String spec = "http://www.fussball.de/ajax.club.matchplan/-/"
+        final String spec = "http://www.fussball.de/ajax.club.matchplan/-/"
                 + "id/00ES8GNB78000065VV0AG08LVUPGND5I/"
                 + "mime-type/HTML/"
                 + "mode/PAGE/"
@@ -53,7 +55,7 @@ public class GameScheduleController {
                 + "offset/0";
         try (InputStream in = new URL(spec).openStream()) {
             
-            Elements matchplan = Jsoup
+            final Elements matchplan = Jsoup
                     .parse(in, "UTF-8", "")
                     .select(".club-matchplan-table")
                     .select("table>tbody>tr");
@@ -72,22 +74,24 @@ public class GameScheduleController {
                         out.write("\t<li><pre>" 
                                 + e.select(".column-date").text());
                     }
+                    out.write(" | " + e.select(".column-team>a").text());
                 } else {
-                    if (tr.toString().toLowerCase().contains("spielfrei")) {
-                        //skip
-                    } else {
-                        tr.select("td").forEach(td -> {
-                            if (td.hasClass("column-club")) {
-                                if (td.text().toLowerCase().contains("tus mosella schweich")) {
-                                    out.write("<mark>" + td.text() + "</mark>");
-                                } else {
-                                    out.write(td.text());
-                                }
-                            } else if (td.hasClass("column-colon")) {
-                                out.write(" 🆚 ");
+                    e.select("td").forEach((c -> {
+                        if (c.hasClass("column-club")) {
+                            if (!c.hasClass("no-border")) {
+                                out.write("\t\t<br>");
                             }
-                        });
-                    }
+                            out.write(c.select(".club-name").text());
+                        } else if (c.hasClass("column-colon")) {
+                            out.write(" " + c.text() + " ");
+                        } else if (c.hasClass("column-score")) {
+                            if (c.select("span").hasClass("info-text")) {
+                                out.write("\n\t\t<br><b>❗❗❗"+c.select("span").text()+"❗❗❗</b>");
+                            }
+                            out.write('\n');
+                        }
+                    }));
+                    out.write("\t</pre></li>\n");
                 }
             });
         } catch (IOException e) {
@@ -97,3 +101,4 @@ public class GameScheduleController {
         return out.toString();
     }
 }
+        
