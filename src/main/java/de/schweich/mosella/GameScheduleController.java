@@ -1,7 +1,5 @@
 package de.schweich.mosella;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.text.DateFormat;
@@ -12,9 +10,11 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 public class GameScheduleController {
@@ -72,24 +72,22 @@ public class GameScheduleController {
                         out.write("\t<li><pre>" 
                                 + e.select(".column-date").text());
                     }
-                    out.write(" | " + e.select(".column-team>a").text());
                 } else {
-                    e.select("td").forEach((c -> {
-                        if (c.hasClass("column-club")) {
-                            if (!c.hasClass("no-border")) {
-                                out.write("\t\t<br>");
+                    if (tr.toString().toLowerCase().contains("spielfrei")) {
+                        //skip
+                    } else {
+                        tr.select("td").forEach(td -> {
+                            if (td.hasClass("column-club")) {
+                                if (td.text().toLowerCase().contains("tus mosella schweich")) {
+                                    out.write("<mark>" + td.text() + "</mark>");
+                                } else {
+                                    out.write(td.text());
+                                }
+                            } else if (td.hasClass("column-colon")) {
+                                out.write(" 🆚 ");
                             }
-                            out.write(c.select(".club-name").text());
-                        } else if (c.hasClass("column-colon")) {
-                            out.write(" " + c.text() + " ");
-                        } else if (c.hasClass("column-score")) {
-                            if (c.select("span").hasClass("info-text")) {
-                                out.write("\n\t\t<br><b>❗❗❗"+c.select("span").text()+"❗❗❗</b>");
-                            }
-                            out.write('\n');
-                        }
-                    }));
-                    out.write("\t</pre></li>\n");
+                        });
+                    }
                 }
             });
         } catch (IOException e) {
